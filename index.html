@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Face Greeter – a door that knows you</title>
+    <meta name="description" content="Face Greeter is a free, privacy-friendly demo: step in front of your camera and a door opens with a spoken, time-aware greeting. Runs entirely in your browser." />
+    <link rel="author" href="https://pavanturlapati.com/" />
+    <meta name="author" content="Pavan Turlapati" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Face Greeter – a door that knows you" />
+    <meta property="og:description" content="Step in front of your camera and a door opens with a personal greeting. Free, open source, and nothing leaves your device." />
+    <meta name="twitter:card" content="summary" />
+    <style>
+      :root { --bg: #0b1020; --card: #141b30; --line: #263050; --text: #e8ecf8; --muted: #8e99b8; --accent: #4ade80; --accent2: #38bdf8; --bad: #f87171; }
+      * { box-sizing: border-box; }
+      [hidden] { display: none !important; }
+      body { margin: 0; background: radial-gradient(1200px 600px at 50% -10%, #1b2750, var(--bg)); color: var(--text);
+             font-family: system-ui, -apple-system, "Segoe UI", sans-serif; min-height: 100vh; }
+      main { max-width: 960px; margin: 0 auto; padding: 48px 20px 64px; }
+      h1 { font-size: clamp(2rem, 5vw, 3.2rem); margin: 0 0 12px; letter-spacing: -0.02em; }
+      h2 { font-size: 1.1rem; margin: 0 0 12px; }
+      .lead { color: var(--muted); font-size: 1.15rem; line-height: 1.6; max-width: 640px; }
+      .badge { display: inline-block; padding: 4px 12px; border: 1px solid var(--line); border-radius: 999px; color: var(--accent2); font-size: .8rem; margin-bottom: 20px; }
+      .cta { margin-top: 28px; padding: 14px 28px; font-size: 1.05rem; font-weight: 600; border: 0; border-radius: 12px; cursor: pointer;
+             background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #04121a; }
+      .cta:disabled { opacity: .6; cursor: wait; }
+      .grid { display: grid; gap: 16px; margin-top: 40px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+      .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px; }
+      .card ul { margin: 0; padding-left: 20px; color: var(--muted); line-height: 1.7; }
+      .card.yes h2 { color: var(--accent); }
+      .card.no h2 { color: var(--bad); }
+      ol.steps { color: var(--muted); line-height: 1.8; padding-left: 20px; margin: 0; }
+      .note { color: var(--muted); font-size: .85rem; margin-top: 32px; line-height: 1.6; }
+      footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--line); color: var(--muted); font-size: .9rem; display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
+      footer a { color: var(--accent2); text-decoration: none; }
+      footer a:hover { text-decoration: underline; }
+      footer button { padding: 6px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--text); cursor: pointer; }
+
+      .app-title { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px; }
+      .stage-wrap { display: flex; flex-direction: column; align-items: center; margin-top: 16px; }
+      .stage { position: relative; width: 640px; max-width: 100%; aspect-ratio: 4 / 3; border-radius: 16px; overflow: hidden; border: 1px solid var(--line); background: #000; }
+      .stage video, .stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; transform: scaleX(-1); }
+      #prompt { margin-top: 20px; font-size: 1.6rem; min-height: 2.2rem; text-align: center; }
+      #status { opacity: .7; text-align: center; margin-top: 6px; min-height: 1.4rem; }
+      .controls { margin-top: 16px; display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+      .controls input { padding: 10px 14px; font-size: 1rem; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--text); }
+      .controls input:disabled { opacity: .6; }
+      .controls input.invalid { border-color: var(--bad); box-shadow: 0 0 0 3px rgba(248,113,113,.25); }
+      .controls button { padding: 10px 18px; font-size: 1rem; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--text); cursor: pointer; }
+      .controls button:disabled { opacity: .5; cursor: not-allowed; }
+      .controls #enroll { background: var(--accent2); color: #04121a; border: 0; font-weight: 600; }
+
+      /* Door */
+      .door { position: absolute; inset: 0; z-index: 5; pointer-events: none; overflow: hidden; }
+      .door .reveal { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
+                      background: radial-gradient(circle at 50% 50%, #fff7d6, #ffd36b 40%, #b8741a); color: #3a2200; padding: 16px;
+                      opacity: 0; transition: opacity .6s ease .4s; }
+      .door .reveal .welcome { font-size: clamp(1.5rem, 5vw, 2.6rem); font-weight: 700; text-shadow: 0 2px 12px rgba(255,255,255,.6); }
+      .door .reveal .sub { margin-top: 8px; opacity: .75; }
+      .door .panel { position: absolute; top: 0; bottom: 0; width: 50%; background: linear-gradient(#3b2a1a, #24170c); border: 2px solid #5b4128;
+                     transition: transform 1.2s cubic-bezier(.7, 0, .2, 1); }
+      .door .panel.left { left: 0; border-right-width: 3px; }
+      .door .panel.right { right: 0; border-left-width: 3px; }
+      .door .panel::after { content: ""; position: absolute; top: 50%; width: 12px; height: 12px; border-radius: 50%; background: #d9a441; }
+      .door .panel.left::after { right: 14px; }
+      .door .panel.right::after { left: 14px; }
+      .door.open .panel.left { transform: translateX(-102%); }
+      .door.open .panel.right { transform: translateX(102%); }
+      .door.open .reveal { opacity: 1; }
+      .door:not(.open) .reveal { transition-delay: 0s; }
+      .door.hidden-door { opacity: 0; transition: opacity .4s; }
+      .door.hidden-door.open { opacity: 1; }
+      @media (prefers-reduced-motion: reduce) { .door .panel, .door .reveal { transition-duration: .01s !important; transition-delay: 0s !important; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <section id="landing">
+        <span class="badge">Runs entirely in your browser</span>
+        <h1>Face Greeter</h1>
+        <p class="lead">
+          Step in front of your camera and a door opens for you with a personal greeting, spoken aloud and matched to your local time:
+          good morning, afternoon, evening or night.
+        </p>
+        <button id="start" class="cta">Launch Face Greeter</button>
+        <p id="error" style="color:var(--bad)"></p>
+
+        <div class="grid">
+          <div class="card">
+            <h2>How it works</h2>
+            <ol class="steps">
+              <li>Allow camera access.</li>
+              <li>Type your name and enroll: follow the prompts to look straight, left, right, up and down.</li>
+              <li>Step away and come back. The door opens and you're greeted by name.</li>
+            </ol>
+          </div>
+          <div class="card yes">
+            <h2>✔ What is saved</h2>
+            <ul>
+              <li>Your name, as you typed it</li>
+              <li>A small list of numbers (a "face fingerprint") from each enrollment snapshot</li>
+              <li>All of it only in this browser's local storage, on your device</li>
+            </ul>
+          </div>
+          <div class="card no">
+            <h2>✘ What is not saved</h2>
+            <ul>
+              <li>No photos or video are stored</li>
+              <li>Nothing is uploaded to any server, and there is no account</li>
+              <li>Other visitors and devices can't see your data</li>
+            </ul>
+          </div>
+        </div>
+        <p class="note">
+          You can delete everything at any time with the "Delete all enrolled faces" button. This is a fun demo, not a security system:
+          a photo of you may fool it, so don't use it to protect anything. The face models are downloaded from a public CDN when you launch the app.
+        </p>
+      </section>
+
+      <section id="app" hidden>
+        <div class="app-title">
+          <h1 style="font-size:1.8rem;margin:0">Face Greeter</h1>
+          <span class="badge" style="margin:0">Your data stays on this device</span>
+        </div>
+        <div class="stage-wrap">
+          <div class="stage">
+            <video id="video" autoplay playsinline muted></video>
+            <canvas id="overlay" width="640" height="480"></canvas>
+            <div id="door" class="door hidden-door" aria-live="polite">
+              <div class="reveal">
+                <div class="welcome" id="doorText"></div>
+                <div class="sub">The door is open. Come on in.</div>
+              </div>
+              <div class="panel left"></div>
+              <div class="panel right"></div>
+            </div>
+          </div>
+          <div id="prompt"></div>
+          <div id="status">Starting…</div>
+          <div class="controls">
+            <input id="name" type="text" placeholder="Your name" maxlength="40" hidden />
+            <button id="enroll" hidden>Enroll my face</button>
+            <button id="reset" hidden>Delete all enrolled faces</button>
+          </div>
+        </div>
+      </section>
+
+      <footer>
+        <span>Built by <a href="https://pavanturlapati.com/" rel="author noopener" target="_blank">Pavan Turlapati</a> · <a href="https://github.com/pavanturlapati" rel="noopener" target="_blank">GitHub</a></span>
+        <a href="https://github.com/pavanturlapati/face-greeter" rel="noopener" target="_blank">View source on GitHub</a>
+        <a href="https://github.com/pavanturlapati/face-greeter" rel="noopener" target="_blank">⭐ Star it if you like it</a>
+        <button id="share" type="button">Share</button>
+      </footer>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
