@@ -245,7 +245,7 @@ async function start() {
           streakName = person.name;
           lastSeen = now;
           if (streak >= CONFIRM_FRAMES) {
-            const text = `${greeting(new Date())} ${person.name}!`;
+            const text = greeting(new Date(), person.name);
             doorTextEl.textContent = text;
             if (!doorEl.classList.contains("open")) openDoor(text);
             if (now - (lastGreeted.get(person.name) ?? -Infinity) > GREET_COOLDOWN_MS) speak(text);

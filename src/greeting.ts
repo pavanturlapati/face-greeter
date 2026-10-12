@@ -8,6 +8,7 @@ export function getPeriod(date: Date = new Date()): Period {
   return "night";
 }
 
-export function greeting(date: Date = new Date()): string {
-  return `Good ${getPeriod(date)}!`;
+export function greeting(date: Date = new Date(), name?: string): string {
+  const base = `Good ${getPeriod(date)}`;
+  return name ? `${base}, ${name}!` : `${base}!`;
 }
