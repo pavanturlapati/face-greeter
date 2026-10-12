@@ -4,6 +4,8 @@ Step in front of your camera and a door opens with a spoken greeting matched to 
 
 Everything runs in your browser. Free and open source (MIT).
 
+**Live app:** https://greeter.pavanturlapati.com/
+
 ## Privacy
 
 **Saved (in your browser's local storage only):**
@@ -30,9 +32,9 @@ npm run dev
 
 Open the printed URL (camera access works on `localhost`). Other scripts: `npm test`, `npm run build`.
 
-## Deploy (Cloudflare Pages)
+## Deploy (Cloudflare Workers static assets)
 
-Build command: `npm run build`, output directory: `dist`.
+Build command: `npm run build`, deploy command: `npx wrangler deploy` (configured in `wrangler.jsonc`, which serves `dist`).
 
 ## Credits
 
